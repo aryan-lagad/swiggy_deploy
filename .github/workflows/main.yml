@@ -57,7 +57,7 @@ jobs:
 
       - name: Deploy to container
         run: docker run -d --name swiggy-clone -p 3000:3000 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
-``
+
 
       # Uncomment the following block to enable Quality Gate check
       # - name: SonarQube Quality Gate
