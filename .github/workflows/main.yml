@@ -22,7 +22,7 @@ deploy:
       run: docker run -d --name swiggy-clone -p 3000:3000 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
 
     - name: Update kubeconfig
-      run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
+      run: aws eks --region us-east-1 update-kubeconfig --name EKS_CLOUD
 
     - name: Deploy to kubernetes
       run: kubectl apply -f deployment-service.yml
