@@ -1,31 +1,75 @@
-deploy:
-  needs: build
-  runs-on: [self-hosted]
-  steps:
-    - name: Authenticate to AWS ECR
-      run: |
-        aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 026788210282.dkr.ecr.us-east-2.amazonaws.com
+name: Build
 
-    - name: Pull image from ECR
-      run: docker pull 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+on:
+  push:
+    branches:
+      - main
 
-    - name: Image scan
-      run: trivy image 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest > trivyimagedeploy.txt
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
 
-    - name: Remove existing container if any
-      run: |
-        if [ "$(docker ps -aq -f name=swiggy-clone)" ]; then
-          docker rm -f swiggy-clone
-        fi
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Ensures full history for SonarQube analysis
 
-    - name: Deploy to container
-      run: docker run -d --name swiggy-clone -p 3000:3000 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=swiggy
+            -Dsonar.projectName=swiggy
+            -Dsonar.sources=.
 
-    - name: Update kubeconfig
-      run: aws eks --region us-east-1 update-kubeconfig --name EKS_CLOUD
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: Deploy to kubernetes
-      run: kubectl apply -f deployment-service.yml
+      - name: Docker build and push to ECR
+        run: |
+          aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 026788210282.dkr.ecr.us-east-2.amazonaws.com
+          docker build -t swiggy-ecr -f deployment-using-github-actions/Dockerfile deployment-using-github-actions/
+          docker tag swiggy-ecr:latest 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+          docker push 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+
+  deploy:
+    needs: build
+    runs-on: [self-hosted]
+    steps:
+      - name: Authenticate to AWS ECR
+        run: |
+          aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 026788210282.dkr.ecr.us-east-2.amazonaws.com
+
+      - name: Pull image from ECR
+        run: docker pull 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+
+      - name: Image scan
+        run: trivy image 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest > trivyimagedeploy.txt
+
+      - name: Remove existing container if any
+        run: |
+          if [ "$(docker ps -aq -f name=swiggy-clone)" ]; then
+            docker rm -f swiggy-clone
+          fi
+
+      - name: Deploy to container
+        run: docker run -d --name swiggy-clone -p 3000:3000 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+
+      - name: Update kubeconfig
+        run: aws eks --region us-east-1 update-kubeconfig --name EKS_CLOUD
+
+      - name: Deploy to kubernetes
+        run: kubectl apply -f deployment-service.yml
+``
 
 
       # Uncomment the following block to enable Quality Gate check
