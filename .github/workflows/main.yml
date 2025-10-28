@@ -1,29 +1,35 @@
 name: Build
- 
+
 on:
-push:
-branches:
-- main
- 
- 
+  push:
+    branches:
+      - main
+
 jobs:
-build:
-name: Build
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v2
-with:
-fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-- uses: sonarsource/sonarqube-scan-action@master
-env:
-SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-with:
-args: >
--Dsonar.projectKey=Swiggy
--Dsonar.projectName=Swiggy
--Dsonar.sources=.
-# - uses: sonarsource/sonarqube-quality-gate-action@master
-#   timeout-minutes: 5
-#   env:
-#     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Ensures full history for SonarQube analysis
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=Swiggy
+            -Dsonar.projectName=Swiggy
+            -Dsonar.sources=.
+
+      # Uncomment the following block to enable Quality Gate check
+      # - name: SonarQube Quality Gate
+      #   uses: sonarsource/sonarqube-quality-gate-action@master
+      #   timeout-minutes: 5
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
