@@ -43,7 +43,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted]
     steps:
       - name: Authenticate to AWS ECR
         run: |
@@ -57,6 +57,12 @@ jobs:
 
       - name: Deploy to container
         run: docker run -d --name swiggy-clone -p 3000:3000 026788210282.dkr.ecr.us-east-2.amazonaws.com/swiggy-ecr:latest
+
+      - name: Update kubeconfig
+        run: aws eks --region us-east-1 update-kubeconfig --name EKS_CLOUD
+
+      - name: Deploy to kubernetes
+        run: kubectl apply -f deployment-service.yml
 
 
       # Uncomment the following block to enable Quality Gate check
