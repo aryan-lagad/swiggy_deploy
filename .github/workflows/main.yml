@@ -45,6 +45,9 @@ jobs:
     needs: build
     runs-on: [self-hosted]
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
       - name: Authenticate to AWS ECR
         run: |
           aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 026788210282.dkr.ecr.us-east-2.amazonaws.com
@@ -68,7 +71,7 @@ jobs:
         run: aws eks --region us-east-1 update-kubeconfig --name EKS_CLOUD
 
       - name: Deploy to kubernetes
-        run: kubectl apply -f deployment-using-github-actions/deployment-service.yml
+        run: kubectl apply -f deployment-using-github-actions/deployment-service.yml 
 
 
 
