@@ -43,7 +43,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, linux, x64]
     steps:
       - name: Authenticate to AWS ECR
         run: |
